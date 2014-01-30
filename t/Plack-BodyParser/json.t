@@ -13,13 +13,13 @@ $parser->add('"moge":"muga"');
 $parser->add('}');
 
 my ($params, $uploads) = $parser->finalize();
-is_deeply $params->as_hashref_multi,
+is_deeply(Hash::MultiValue->new(@$params)->as_hashref_multi,
   +{
     'hoge'     => [ 'fuga', 'hige' ],
     'moge'     => ['muga'],
     'にほんご' => ['日本語'],
-  };
-is_deeply [$uploads->keys], [];
+  });
+is_deeply $uploads, [];
 
 done_testing;
 

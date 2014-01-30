@@ -12,10 +12,7 @@ sub new {
 sub add { }
 
 sub finalize {
-    return (
-        Hash::MultiValue->new(),
-        Hash::MultiValue->new()
-    );
+    return ([],[]);
 }
 
 1;

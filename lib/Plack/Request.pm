@@ -12,6 +12,7 @@ use Plack::Request::Upload;
 use Plack::BodyParser;
 use Plack::BodyParser::UrlEncoded;
 use Plack::BodyParser::MultiPart;
+use Plack::BodyParser::JSON;
 use Stream::Buffered;
 use URI;
 use URI::Escape ();
@@ -103,8 +104,16 @@ sub cookies {
 }
 
 sub query_parameters {
+    my ($self) = @_;
+    $self->env->{'plack.request.query'} ||= Hash::MultiValue->new(@{$self->_query_parameters()});
+}
+
+sub _query_parameters {
     my $self = shift;
-    $self->env->{'plack.request.query'} ||= $self->_parse_query;
+    unless ( $self->env->{'plack.request.query_parameters'} ) {
+        $self->env->{'plack.request.query_parameters'} = $self->_parse_query;
+    }
+    return $self->env->{'plack.request.query_parameters'};
 }
 
 sub _parse_query {
@@ -126,8 +135,7 @@ sub _parse_query {
                 split(/\+/, $query_string, -1);
         }
     }
-
-    Hash::MultiValue->new(@query);
+    return \@query;
 }
 
 sub content {
@@ -172,13 +180,16 @@ sub referer          { shift->headers->referer(@_) }
 sub user_agent       { shift->headers->user_agent(@_) }
 
 sub body_parameters {
-    my $self = shift;
+    my ($self) = @_;
+    $self->env->{'plack.request.body'} ||= Hash::MultiValue->new(@{$self->_body_parameters()});
+}
 
-    unless ($self->env->{'plack.request.body'}) {
+sub _body_parameters {
+    my $self = shift;
+    unless ($self->env->{'plack.request.body_parameters'}) {
         $self->_parse_request_body;
     }
-
-    return $self->env->{'plack.request.body'};
+    return $self->env->{'plack.request.body_parameters'};
 }
 
 # contains body + query
@@ -186,21 +197,20 @@ sub parameters {
     my $self = shift;
 
     $self->env->{'plack.request.merged'} ||= do {
-        my $query = $self->query_parameters;
-        my $body  = $self->body_parameters;
-        Hash::MultiValue->new($query->flatten, $body->flatten);
+        Hash::MultiValue->new(
+            @{$self->_query_parameters},
+            @{$self->_body_parameters},
+        );
     };
 }
 
 sub uploads {
     my $self = shift;
-
-    if ($self->env->{'plack.request.upload'}) {
-        return $self->env->{'plack.request.upload'};
+    unless ($self->env->{'plack.request.upload_parameters'}) {
+        $self->_parse_request_body;
     }
-
-    $self->_parse_request_body;
-    return $self->env->{'plack.request.upload'};
+    $self->env->{'plack.request.upload'} ||= 
+        Hash::MultiValue->new(@{$self->env->{'plack.request.upload_parameters'}});
 }
 
 sub param {
@@ -273,8 +283,9 @@ sub new_response {
 
 sub _parse_request_body {
     my $self = shift;
-    return $self->request_body_parser->parse($self->env);
+    $self->request_body_parser->parse($self->env);
 }
+
 
 1;
 __END__

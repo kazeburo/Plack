@@ -8,8 +8,8 @@ use Plack::BodyParser::UrlEncoded;
 my $parser = Plack::BodyParser::UrlEncoded->new();
 $parser->add('oo=xx%20yy');
 my ($params, $uploads) = $parser->finalize();
-is_deeply $params,  Hash::MultiValue->new('oo' => 'xx yy');
-is_deeply $uploads, Hash::MultiValue->new();
+is_deeply( Hash::MultiValue->new(@$params)->as_hashref_multi, +{'oo' => ['xx yy']});
+is_deeply $uploads, [];
 
 done_testing;
 

@@ -2,9 +2,7 @@ package Plack::BodyParser::UrlEncoded;
 use strict;
 use warnings;
 use utf8;
-use 5.010_001;
 use URL::Encode;
-use Hash::MultiValue;
 
 sub new {
     my $class = shift;
@@ -22,7 +20,7 @@ sub finalize {
     my $self = shift;
 
     my $p = URL::Encode::url_params_flat($self->{buffer});
-    return (Hash::MultiValue->new(@$p), Hash::MultiValue->new());
+    return ($p, []);
 }
 
 1;

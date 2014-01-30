@@ -2,11 +2,9 @@ package Plack::BodyParser::MultiPart;
 use strict;
 use warnings;
 use utf8;
-use 5.010_001;
 use HTTP::MultiPartParser;
 use HTTP::Headers::Util    qw[split_header_words];
 use File::Temp;
-use Hash::MultiValue;
 use Carp ();
 use Plack::Request::Upload;
 use HTTP::Headers;
@@ -16,8 +14,8 @@ sub new {
 
     my $self = bless { }, $class;
 
-    my $uploads = Hash::MultiValue->new();
-    my $params  = Hash::MultiValue->new();
+    my @uploads;
+    my @params;
 
     unless (defined $env->{CONTENT_TYPE}) {
         Carp::croak("Missing CONTENT_TYPE in PSGI env");
@@ -93,17 +91,17 @@ sub new {
                         map { split(/\s*:\s*/, $_, 2) }
                         @{$part->{headers}}
                     );
-                    $uploads->add($part->{name}, Plack::Request::Upload->new(
+                    push @uploads, $part->{name}, Plack::Request::Upload->new(
                         headers  => $headers,
                         size     => -s $part->{fh},
                         filename => $part->{filename},
                         tempname => $part->{tempname},
-                    ));
+                    );
                 }
             } else {
                 $part->{data} .= $chunk;
                 if ($final) {
-                    $params->add($part->{name}, $part->{data});
+                    push @params, $part->{name}, $part->{data};
                 }
             }
         },
@@ -111,8 +109,8 @@ sub new {
     );
 
     $self->{parser}  = $parser;
-    $self->{params}  = $params;
-    $self->{uploads} = $uploads;
+    $self->{params}  = \@params;
+    $self->{uploads} = \@uploads;
 
     return $self;
 }

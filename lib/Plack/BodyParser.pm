@@ -40,8 +40,8 @@ sub parse {
     my $cl = $env->{CONTENT_LENGTH};
     if (!$ct && !$cl) {
         # No Content-Type nor Content-Length -> GET/HEAD
-        $env->{'plack.request.body'}   = Hash::MultiValue->new;
-        $env->{'plack.request.upload'} = Hash::MultiValue->new;
+        $env->{'plack.request.body_parameters'}   = [];
+        $env->{'plack.request.upload_parameters'} = [];
         return;
     }
 
@@ -75,7 +75,7 @@ sub parse {
         $input->seek(0, 0);
     }
 
-    ($env->{'plack.request.body'}, $env->{'plack.request.upload'})
+    ($env->{'plack.request.body_parameters'}, $env->{'plack.request.upload_parameters'})
         = $parser->finalize();
 
     return 1;

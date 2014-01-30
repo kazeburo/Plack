@@ -3,6 +3,7 @@ use warnings;
 use utf8;
 use Test::More;
 use Plack::BodyParser::MultiPart;
+use Hash::MultiValue;
 
 my $content = qq{------BOUNDARY
 Content-Disposition: form-data; name="hoge"
@@ -67,10 +68,13 @@ my $parser = Plack::BodyParser::MultiPart->new($env);
 $parser->add($_) for split //, $content;
 my ($params, $uploads) = $parser->finalize();
 
-is_deeply $params->as_hashref_multi, {
+is_deeply( Hash::MultiValue->new(@$params)->as_hashref_multi, {   
     hoge => ['fuga', 'hige'],
     nobuko => ['iwaki'],
-};
+});
+
+$uploads = Hash::MultiValue->new(@$uploads);
+
 my @test_upload_file = $uploads->get_all('test_upload_file');
 is 0+@test_upload_file, 2;
 is slurp($test_upload_file[0]), 'SHOGUN';
